@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<DevRes>
+    <Translations>
+        <Res id="appTitle" tr="TV Denoising"/>
+        <Res id="load"     tr="Load"/>
+        <Res id="loadTT"   tr="Load an image from disk"/>
+        <Res id="denoise"  tr="Denoise"/>
+        <Res id="denoiseTT" tr="Run TV denoising on the loaded image"/>
+    </Translations>
+</DevRes>

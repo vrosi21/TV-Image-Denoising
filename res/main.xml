@@ -1,0 +1,14 @@
+<?xml version='1.0'?>
+<DevRes>
+	<Images>
+		<Res id="load"    path="Common/Icons/openSave/open64.png"/>
+		<Res id="denoise" path="Common/Icons/update64.png"/>
+	</Images>
+
+	<!-- Test images loaded at runtime via gui::getResFileName("key") -->
+	<FileNames>
+		<Res id="cameraman" path=":images/cameraman.png"/>
+		<Res id="ape"       path=":images/ape.png"/>
+		<Res id="barbara"   path=":images/barbara.png"/>
+	</FileNames>
+</DevRes>
