@@ -20,7 +20,7 @@ include(TVDenoising.cmake)
 
 # ── CPack installer configuration ─────────────────────────────────
 set(CPACK_PACKAGE_NAME              "TVDenoising")
-set(CPACK_PACKAGE_VENDOR            "Kemal Sivro — ETF Sarajevo")
+set(CPACK_PACKAGE_VENDOR            "Kemal Sivro - ETF Sarajevo")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TV Image Denoising — Gradient Descent & Newton's Method GUI")
 set(CPACK_PACKAGE_VERSION           "1.0.0")
 set(CPACK_PACKAGE_VERSION_MAJOR     "1")
@@ -30,7 +30,7 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "TVDenoising")
 set(CPACK_RESOURCE_FILE_LICENSE     "${CMAKE_CURRENT_LIST_DIR}/LICENSE" )
 
 if (WIN32)
-    set(CPACK_GENERATOR "NSIS;WIX")
+    set(CPACK_GENERATOR "NSIS")
     set(CPACK_NSIS_PACKAGE_NAME     "TV Image Denoising")
     set(CPACK_NSIS_DISPLAY_NAME     "TV Image Denoising")
     set(CPACK_NSIS_HELP_LINK        "https://github.com/vrosi21/TV-Image-Denoising")
