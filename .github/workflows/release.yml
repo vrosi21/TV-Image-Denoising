@@ -4,276 +4,304 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publish to GitHub Releases (yes/no)"
+        required: false
+        default: "no"
+      release_tag:
+        description: "Tag name for the Release (required if publishing, e.g. v1.0.0)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
 
 env:
-  APP_NAME:   TVDenoising
-  SDK_VER:    4.2.0
-  SDK_DATE:   20260517   # date suffix in natIDSDKAllInOne filenames for v4.2.0
+  APP_NAME: TVDenoising
+  SDK_VER:  4.2.1
+  SDK_DATE: 20260710
 
 jobs:
 
 # ──────────────────────────────────────────────────────────────────
-  build-windows:
+  windows:
     name: Windows
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache natID SDK
-        id: cache-sdk
-        uses: actions/cache@v4
-        with:
-          path: C:\natID.SDK
-          key: natid-win-${{ env.SDK_VER }}
+      - name: Install natID SDK
+        shell: cmd
+        run: |
+          git clone --depth 1 https://github.com/idzafic/natID.git %USERPROFILE%\natID
+          mklink /J %USERPROFILE%\natID.SDK   %USERPROFILE%\natID\natID.SDK
+          mklink /J %USERPROFILE%\natID.Utils %USERPROFILE%\natID\natID.Utils
+          curl -L -o %TEMP%\sdk-bin.7z https://github.com/idzafic/natID/releases/download/v%SDK_VER%/bin_win_x64_%SDK_DATE%.7z
+          dir %TEMP%\sdk-bin.7z
 
-      - name: Download & extract natID SDK
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
+      - name: Extract SDK libs
         shell: pwsh
         run: |
-          $url = "https://github.com/idzafic/natID/releases/download/v$env:SDK_VER/natIDSDKAllInOne_win_x64_$env:SDK_DATE.7z"
-          Invoke-WebRequest -Uri $url -OutFile sdk.7z
-          7z x sdk.7z -oC:\ -y
-          Remove-Item sdk.7z
+          choco install 7zip -y --no-progress
+          & "C:\Program Files\7-Zip\7z.exe" x -y "-o$env:USERPROFILE\natID.SDK\bin" "$env:TEMP\sdk-bin.7z"
+          Get-ChildItem "$env:USERPROFILE\natID.SDK\bin" -Filter *.dll | Select-Object -First 5 Name
 
-      - name: Create natID.RAMDisk
-        shell: pwsh
-        run: New-Item -ItemType Directory -Force -Path "C:\natID.RAMDisk\Out"
+      - name: Setup RAMDisk and project symlink
+        shell: cmd
+        run: |
+          if not exist %USERPROFILE%\natID.RAMDisk mkdir %USERPROFILE%\natID.RAMDisk
+          if not exist R:\ subst R: %USERPROFILE%\natID.RAMDisk
+          mkdir %USERPROFILE%\Desktop 2>nul
+          mklink /J %USERPROFILE%\Desktop\TVDenoising %GITHUB_WORKSPACE%
 
-      - name: Install NSIS
-        run: choco install nsis --no-progress -y
+      - name: Build (Release)
+        shell: cmd
+        run: |
+          set HOME=%USERPROFILE%
+          cmake -S Implementation -B %USERPROFILE%\natID.RAMDisk\build
+          cmake --build %USERPROFILE%\natID.RAMDisk\build --config Release
+          dir R:\Out\TVDenoising\Release
 
-      - name: Configure
+      - name: Collect installer (SetupCollector)
         shell: pwsh
         run: |
-          $env:USERPROFILE = "C:"
-          cmake -S Implementation -B build `
-            -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_BUILD_TYPE=Release
+          $env:HOME = $env:USERPROFILE
+          xcopy /E /I "$env:USERPROFILE\natID.SDK\DevEnv\SetupCollectors" "$env:USERPROFILE\Setups"
+          Copy-Item "$env:GITHUB_WORKSPACE\packaging\TVDenoising.xml" "$env:USERPROFILE\Setups\"
+          & "$env:USERPROFILE\natID.Utils\windows\SetupCollector.exe" "$env:USERPROFILE\Setups\TVDenoising.xml"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmd /c "dir /s /b R:\Setup\TVDenoising"
 
-      - name: Build
+      - name: Stage and zip installer
         shell: pwsh
         run: |
-          $env:USERPROFILE = "C:"
-          cmake --build build --config Release --parallel
-
-      - name: Locate built exe
-        id: locate
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem "C:\natID.RAMDisk\Out\$env:APP_NAME\Release" -Filter "*.exe" | Select-Object -First 1
-          echo "EXE_DIR=C:\natID.RAMDisk\Out\$env:APP_NAME\Release" >> $env:GITHUB_ENV
-
-      - name: Copy natID DLLs next to exe
-        shell: pwsh
-        run: |
-          $sdkBin = "C:\natID.SDK\bin"
-          Copy-Item "$sdkBin\*.dll"     $env:EXE_DIR -ErrorAction SilentlyContinue
-          Copy-Item -Recurse "$sdkBin\GTK\bin\*.dll" $env:EXE_DIR -ErrorAction SilentlyContinue
-
-      - name: CPack NSIS installer
-        shell: pwsh
-        run: |
-          $env:USERPROFILE = "C:"
-          cd build
-          cpack -C Release -G NSIS
-
-      - name: Zip installer
-        shell: pwsh
-        run: |
-          $files = Get-ChildItem build -Filter "TVDenoising-*.exe" -Recurse | Select-Object -ExpandProperty FullName
-          if (-not $files) { $files = Get-ChildItem build -Include "*.exe" -Recurse | Where-Object { $_.Name -notlike "*cmake*" } | Select-Object -ExpandProperty FullName }
-          Compress-Archive -Path $files -DestinationPath TVDenoising-win.zip
+          New-Item -ItemType Directory -Force -Path installer-output | Out-Null
+          Get-ChildItem "R:\Setup" -File -Recurse -Include *.msi,"Install*.exe" |
+            Copy-Item -Destination installer-output
+          Get-ChildItem installer-output
+          if (-not (Get-ChildItem installer-output -Filter *.msi)) {
+            Write-Error "No .msi produced"
+            exit 1
+          }
+          Compress-Archive -Path installer-output/* -DestinationPath TVDenoising-win.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: win
+          name: TVDenoising-win
           path: TVDenoising-win.zip
+          if-no-files-found: error
 
 # ──────────────────────────────────────────────────────────────────
-  build-macos-silicon:
+  macos-silicon:
     name: macOS Apple Silicon
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache natID SDK
-        id: cache-sdk
-        uses: actions/cache@v4
-        with:
-          path: ~/natID.SDK
-          key: natid-macos-arm64-${{ env.SDK_VER }}
-
-      - name: Download & extract natID SDK
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
+      - name: Install natID SDK
         run: |
-          brew install p7zip
-          curl -L "https://github.com/idzafic/natID/releases/download/v${SDK_VER}/natIDSDKAllInOne_macOS_arm64_${SDK_DATE}.7z" -o sdk.7z
-          7z x sdk.7z -o"${HOME}" -y
-          rm sdk.7z
+          git clone --depth 1 https://github.com/idzafic/natID.git $HOME/natID
+          ln -s $HOME/natID/natID.SDK   $HOME/natID.SDK
+          ln -s $HOME/natID/natID.Utils $HOME/natID.Utils
+          brew install sevenzip
+          curl -L -o /tmp/sdk-bin.7z \
+            https://github.com/idzafic/natID/releases/download/v${SDK_VER}/bin_macOS_arm64_${SDK_DATE}.7z
+          7zz x -y -o$HOME/natID.SDK/bin /tmp/sdk-bin.7z
+          ls $HOME/natID.SDK/bin/lib/
 
-      - name: Create natID.RAMDisk
-        run: mkdir -p ~/natID.RAMDisk/Out
-
-      - name: Configure & Build
+      - name: Setup RAMDisk and project symlink
         run: |
-          cmake -S Implementation -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=arm64
-          cmake --build build --parallel
+          mkdir -p $HOME/natID.RAMDisk/Out
+          mkdir -p ~/Desktop
+          ln -s "$GITHUB_WORKSPACE" ~/Desktop/TVDenoising
 
-      - name: Bundle dylibs into .app
+      - name: Build (Release)
         run: |
-          APP=$(find ~/natID.RAMDisk/Out/${APP_NAME}/Release -name "*.app" | head -1)
-          FRAMEWORKS="${APP}/Contents/Frameworks"
-          mkdir -p "${FRAMEWORKS}"
-          cp ~/natID.SDK/bin/lib/*.dylib "${FRAMEWORKS}/" 2>/dev/null || true
-          find "${FRAMEWORKS}" -name "*.dylib" -exec codesign --force --sign - {} \;
-          codesign --force --sign - "${APP}"
+          cmake -S Implementation -B $HOME/natID.RAMDisk/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64
+          cmake --build $HOME/natID.RAMDisk/build -j
+
+      - name: Collect installer (SetupCollector)
+        run: |
+          sudo ln -s $HOME/natID.RAMDisk /Volumes/RAMDisk
+          cp -r $HOME/natID/natID.SDK/DevEnv/SetupCollectors $HOME/Setups
+          cp "$GITHUB_WORKSPACE/packaging/TVDenoising.xml" $HOME/Setups/
+          chmod +x $HOME/natID/natID.Utils/macOS/arm64/SetupCollector
+          $HOME/natID/natID.Utils/macOS/arm64/SetupCollector $HOME/Setups/TVDenoising.xml
+          find $HOME/natID.RAMDisk/Setup -maxdepth 4
+
+      - name: Stage installer output
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/installer-output"
+          cp -R $HOME/natID.RAMDisk/Setup/ALL_Bundles/* "$GITHUB_WORKSPACE/installer-output/" 2>/dev/null || \
+            cp -R $HOME/natID.RAMDisk/Setup/TVDenoising/* "$GITHUB_WORKSPACE/installer-output/" 2>/dev/null || \
+            echo "WARNING: no installer output found"
+          ls -laR "$GITHUB_WORKSPACE/installer-output/"
+
+      - name: Re-sign and clear quarantine
+        run: |
+          codesign --force --deep --sign - "$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
+          xattr -cr "$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
 
       - name: Zip .app
         run: |
-          APP=$(find ~/natID.RAMDisk/Out/${APP_NAME}/Release -name "*.app" | head -1)
-          ditto -c -k --keepParent "${APP}" TVDenoising-macOS-Silicon.zip
+          cd "$GITHUB_WORKSPACE/installer-output"
+          ditto -c -k --keepParent --sequesterRsrc TVDenoising.app TVDenoising-macOS-Silicon.zip
+          xattr -c TVDenoising-macOS-Silicon.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-silicon
-          path: TVDenoising-macOS-Silicon.zip
+          name: TVDenoising-macOS-Silicon
+          path: installer-output/TVDenoising-macOS-Silicon.zip
+          if-no-files-found: error
 
 # ──────────────────────────────────────────────────────────────────
-  build-macos-intel:
+  macos-intel:
     name: macOS Intel
-    runs-on: macos-13
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache natID SDK
-        id: cache-sdk
-        uses: actions/cache@v4
-        with:
-          path: ~/natID.SDK
-          key: natid-macos-x64-${{ env.SDK_VER }}
-
-      - name: Download & extract natID SDK
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
+      - name: Install natID SDK
         run: |
-          brew install p7zip
-          curl -L "https://github.com/idzafic/natID/releases/download/v${SDK_VER}/natIDSDKAllInOne_macOS_x64_${SDK_DATE}.7z" -o sdk.7z
-          7z x sdk.7z -o"${HOME}" -y
-          rm sdk.7z
+          git clone --depth 1 https://github.com/idzafic/natID.git $HOME/natID
+          ln -s $HOME/natID/natID.SDK   $HOME/natID.SDK
+          ln -s $HOME/natID/natID.Utils $HOME/natID.Utils
+          brew install sevenzip
+          curl -L -o /tmp/sdk-bin.7z \
+            https://github.com/idzafic/natID/releases/download/v${SDK_VER}/bin_macOS_x64_${SDK_DATE}.7z
+          7zz x -y -o$HOME/natID.SDK/bin /tmp/sdk-bin.7z
+          ls $HOME/natID.SDK/bin/lib/
 
-      - name: Create natID.RAMDisk
-        run: mkdir -p ~/natID.RAMDisk/Out
-
-      - name: Configure & Build
+      - name: Setup RAMDisk and project symlink
         run: |
-          cmake -S Implementation -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=x86_64
-          cmake --build build --parallel
+          mkdir -p $HOME/natID.RAMDisk/Out
+          mkdir -p ~/Desktop
+          ln -s "$GITHUB_WORKSPACE" ~/Desktop/TVDenoising
 
-      - name: Bundle dylibs into .app
+      - name: Build (Release)
         run: |
-          APP=$(find ~/natID.RAMDisk/Out/${APP_NAME}/Release -name "*.app" | head -1)
-          FRAMEWORKS="${APP}/Contents/Frameworks"
-          mkdir -p "${FRAMEWORKS}"
-          cp ~/natID.SDK/bin/lib/*.dylib "${FRAMEWORKS}/" 2>/dev/null || true
-          find "${FRAMEWORKS}" -name "*.dylib" -exec codesign --force --sign - {} \;
-          codesign --force --sign - "${APP}"
+          cmake -S Implementation -B $HOME/natID.RAMDisk/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
+          cmake --build $HOME/natID.RAMDisk/build -j
+
+      - name: Collect installer (SetupCollector)
+        run: |
+          sudo ln -s $HOME/natID.RAMDisk /Volumes/RAMDisk
+          cp -r $HOME/natID/natID.SDK/DevEnv/SetupCollectors $HOME/Setups
+          cp "$GITHUB_WORKSPACE/packaging/TVDenoising.xml" $HOME/Setups/
+          chmod +x $HOME/natID/natID.Utils/macOS/x64/SetupCollector
+          $HOME/natID/natID.Utils/macOS/x64/SetupCollector $HOME/Setups/TVDenoising.xml
+          find $HOME/natID.RAMDisk/Setup -maxdepth 4
+
+      - name: Stage installer output
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/installer-output"
+          cp -R $HOME/natID.RAMDisk/Setup/ALL_Bundles/* "$GITHUB_WORKSPACE/installer-output/" 2>/dev/null || \
+            cp -R $HOME/natID.RAMDisk/Setup/TVDenoising/* "$GITHUB_WORKSPACE/installer-output/" 2>/dev/null || \
+            echo "WARNING: no installer output found"
+          ls -laR "$GITHUB_WORKSPACE/installer-output/"
+
+      - name: Re-sign and clear quarantine
+        run: |
+          codesign --force --deep --sign - "$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
+          xattr -cr "$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
 
       - name: Zip .app
         run: |
-          APP=$(find ~/natID.RAMDisk/Out/${APP_NAME}/Release -name "*.app" | head -1)
-          ditto -c -k --keepParent "${APP}" TVDenoising-macOS-Intel.zip
+          cd "$GITHUB_WORKSPACE/installer-output"
+          ditto -c -k --keepParent --sequesterRsrc TVDenoising.app TVDenoising-macOS-Intel.zip
+          xattr -c TVDenoising-macOS-Intel.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-intel
-          path: TVDenoising-macOS-Intel.zip
+          name: TVDenoising-macOS-Intel
+          path: installer-output/TVDenoising-macOS-Intel.zip
+          if-no-files-found: error
 
 # ──────────────────────────────────────────────────────────────────
-  build-linux:
+  linux:
     name: Linux
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install build tools
+      - name: Install build prerequisites
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            build-essential cmake ninja-build p7zip-full \
-            libgtk-3-dev libglib2.0-dev libcairo2-dev \
-            libpango1.0-dev libgdk-pixbuf2.0-dev \
-            dpkg-dev fakeroot
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git p7zip-full \
+            libgtk-4-dev libadwaita-1-dev
 
-      - name: Cache natID SDK
-        id: cache-sdk
-        uses: actions/cache@v4
-        with:
-          path: ~/natID.SDK
-          key: natid-linux-x64-${{ env.SDK_VER }}
-
-      - name: Download & extract natID SDK
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
+      - name: Install natID SDK
         run: |
-          curl -L "https://github.com/idzafic/natID/releases/download/v${SDK_VER}/natIDSDKAllInOne_linux_x64_${SDK_DATE}.7z" -o sdk.7z
-          7z x sdk.7z -o"${HOME}" -y
-          rm sdk.7z
+          git clone --depth 1 https://github.com/idzafic/natID.git $HOME/natID
+          ln -s $HOME/natID/natID.SDK   $HOME/natID.SDK
+          ln -s $HOME/natID/natID.Utils $HOME/natID.Utils
+          curl -L -o /tmp/sdk-bin.7z \
+            https://github.com/idzafic/natID/releases/download/v${SDK_VER}/bin_linux_x64_${SDK_DATE}.7z
+          7z x -y -o$HOME/natID.SDK/bin /tmp/sdk-bin.7z
+          ls $HOME/natID.SDK/bin/lib/
 
-      - name: Create natID.RAMDisk
-        run: mkdir -p ~/natID.RAMDisk/Out
-
-      - name: Configure & Build
+      - name: Setup RAMDisk and project symlink
         run: |
-          cmake -S Implementation -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=/usr/local
-          cmake --build build --parallel
+          mkdir -p $HOME/natID.RAMDisk/Out
+          mkdir -p ~/Desktop
+          ln -s "$GITHUB_WORKSPACE" ~/Desktop/TVDenoising
 
-      - name: Package DEB
+      - name: Build (Release)
         run: |
-          cd build
-          cpack -G DEB -C Release
+          cmake -S Implementation -B $HOME/natID.RAMDisk/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build $HOME/natID.RAMDisk/build -j$(nproc)
 
-      - name: Zip .deb
+      - name: Collect installer (SetupCollector)
         run: |
-          DEB=$(ls build/*.deb | head -1)
-          zip TVDenoising-linux.zip "${DEB}"
+          sudo rm -rf /media/RAMDisk
+          sudo ln -s $HOME/natID.RAMDisk /media/RAMDisk
+          cp -r $HOME/natID/natID.SDK/DevEnv/SetupCollectors $HOME/Setups
+          cp "$GITHUB_WORKSPACE/packaging/TVDenoising.xml" $HOME/Setups/
+          chmod +x $HOME/natID/natID.Utils/linux/SetupCollector
+          $HOME/natID/natID.Utils/linux/SetupCollector $HOME/Setups/TVDenoising.xml
+          find $HOME/natID.RAMDisk/Setup -maxdepth 4 2>/dev/null || echo "no Setup dir"
+
+      - name: Stage and zip installer
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/installer-output"
+          find $HOME/natID.RAMDisk/Setup -name "*.deb" -exec cp {} "$GITHUB_WORKSPACE/installer-output/" \; || true
+          find $HOME/natID.RAMDisk/Setup -maxdepth 2 -type f ! -name "*.txt" \
+            -exec cp {} "$GITHUB_WORKSPACE/installer-output/" \; 2>/dev/null || true
+          ls -la "$GITHUB_WORKSPACE/installer-output/"
+          cd "$GITHUB_WORKSPACE"
+          zip -j TVDenoising-linux.zip installer-output/*
 
       - uses: actions/upload-artifact@v4
         with:
-          name: linux
+          name: TVDenoising-linux
           path: TVDenoising-linux.zip
+          if-no-files-found: error
 
 # ──────────────────────────────────────────────────────────────────
   release:
     name: Create GitHub Release
-    needs: [build-windows, build-macos-silicon, build-macos-intel, build-linux]
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
+    needs: [windows, macos-silicon, macos-intel, linux]
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_release == 'yes')
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-
-      - name: SHA-256 checksums
-        id: sums
-        run: |
-          echo "win=$(sha256sum TVDenoising-win.zip           | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "sil=$(sha256sum TVDenoising-macOS-Silicon.zip | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "int=$(sha256sum TVDenoising-macOS-Intel.zip   | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "lnx=$(sha256sum TVDenoising-linux.zip         | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-
-      - name: Get tag name
+      - name: Determine release tag
         id: tag
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "name=manual-$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "name=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           else
-            echo "name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "name=${{ github.event.inputs.release_tag }}" >> $GITHUB_OUTPUT
           fi
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f | head -50
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -284,14 +312,14 @@ jobs:
 
             | Platform | File |
             |---|---|
-            | 🪟 Windows | `TVDenoising-win.zip` (contains installer `.exe` — keep alongside `.msi` if present) |
+            | 🪟 Windows | `TVDenoising-win.zip` (contains installer `.exe` + `.msi` — keep both together) |
             | 🍎 macOS Apple Silicon | `TVDenoising-macOS-Silicon.zip` (M1/M2/M3/M4) |
             | 🍎 macOS Intel | `TVDenoising-macOS-Intel.zip` (2016–2020 Intel Macs) |
             | 🐧 Linux (Ubuntu 24.04+) | `TVDenoising-linux.zip` (contains `.deb`) |
 
             ## Install notes
 
-            **Windows:** unzip, run the `.exe`.
+            **Windows:** unzip, run the `.exe` (or `.msi` directly).
 
             **macOS:** unzip, drag `TVDenoising.app` to Applications.
 
@@ -299,19 +327,10 @@ jobs:
             > ```
             > xattr -cr /Applications/TVDenoising.app
             > ```
-            > No output = success. If you see "damaged or incomplete", run the command above.
 
             **Linux:** unzip, then `sudo apt install ./TVDenoising*.deb`
-
-            ## SHA-256
-            | File | sha256 |
-            |---|---|
-            | `TVDenoising-win.zip`           | `${{ steps.sums.outputs.win }}` |
-            | `TVDenoising-macOS-Silicon.zip` | `${{ steps.sums.outputs.sil }}` |
-            | `TVDenoising-macOS-Intel.zip`   | `${{ steps.sums.outputs.int }}` |
-            | `TVDenoising-linux.zip`         | `${{ steps.sums.outputs.lnx }}` |
           files: |
-            TVDenoising-win.zip
-            TVDenoising-macOS-Silicon.zip
-            TVDenoising-macOS-Intel.zip
-            TVDenoising-linux.zip
+            artifacts/TVDenoising-win/*
+            artifacts/TVDenoising-macOS-Silicon/*
+            artifacts/TVDenoising-macOS-Intel/*
+            artifacts/TVDenoising-linux/*
