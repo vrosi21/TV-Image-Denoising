@@ -74,13 +74,13 @@ jobs:
         shell: pwsh
         run: |
           $env:USERPROFILE = "C:"
-          cd build
-          cpack -G NSIS -C Release
+          cmake --build build --target package --config Release
 
-      - name: Zip (exe installer + any msi)
+      - name: Zip installer
         shell: pwsh
         run: |
-          $files = Get-ChildItem build -Include "*.exe","*.msi" -Recurse | Select-Object -ExpandProperty FullName
+          $files = Get-ChildItem build -Filter "TVDenoising-*.exe" -Recurse | Select-Object -ExpandProperty FullName
+          if (-not $files) { $files = Get-ChildItem build -Include "*.exe" -Recurse | Where-Object { $_.Name -notlike "*cmake*" } | Select-Object -ExpandProperty FullName }
           Compress-Archive -Path $files -DestinationPath TVDenoising-win.zip
 
       - uses: actions/upload-artifact@v4

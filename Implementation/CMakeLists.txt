@@ -21,7 +21,7 @@ include(TVDenoising.cmake)
 # ── CPack installer configuration ─────────────────────────────────
 set(CPACK_PACKAGE_NAME              "TVDenoising")
 set(CPACK_PACKAGE_VENDOR            "Kemal Sivro - ETF Sarajevo")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TV Image Denoising — Gradient Descent & Newton's Method GUI")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TV Image Denoising - Gradient Descent and Newton's Method GUI")
 set(CPACK_PACKAGE_VERSION           "1.0.0")
 set(CPACK_PACKAGE_VERSION_MAJOR     "1")
 set(CPACK_PACKAGE_VERSION_MINOR     "0")
