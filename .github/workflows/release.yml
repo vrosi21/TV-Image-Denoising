@@ -74,7 +74,8 @@ jobs:
         shell: pwsh
         run: |
           $env:USERPROFILE = "C:"
-          cmake --build build --target package --config Release
+          cd build
+          cpack -C Release -G NSIS
 
       - name: Zip installer
         shell: pwsh
