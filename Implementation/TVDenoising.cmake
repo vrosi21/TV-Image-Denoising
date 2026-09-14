@@ -49,5 +49,27 @@ target_link_libraries(${TVDEN_NAME}
     debug   ${MATRIX_LIB_DEBUG} optimized ${MATRIX_LIB_RELEASE})
 
 setTargetPropertiesForGUIApp(${TVDEN_NAME} ${TVDEN_PLIST})
+setAppIcon(${TVDEN_NAME} ${CMAKE_CURRENT_LIST_DIR})
 setIDEPropertiesForGUIExecutable(${TVDEN_NAME} ${CMAKE_CURRENT_LIST_DIR})
 setPlatformDLLPath(${TVDEN_NAME})
+
+# ── Install rules (used by CPack) ─────────────────────────────────
+install(TARGETS ${TVDEN_NAME}
+    BUNDLE  DESTINATION .          COMPONENT Runtime
+    RUNTIME DESTINATION bin        COMPONENT Runtime)
+
+install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/res
+    DESTINATION share/${TVDEN_NAME}
+    COMPONENT Runtime)
+
+if (UNIX AND NOT APPLE)
+    # Desktop entry
+    install(FILES ${CMAKE_CURRENT_LIST_DIR}/TVDenoising.desktop
+            DESTINATION share/applications)
+    # App icons
+    foreach(SIZE 16 32 48 128 256)
+        install(FILES ${CMAKE_CURRENT_LIST_DIR}/res/appIcon/lnxApp${SIZE}.png
+                DESTINATION share/icons/hicolor/${SIZE}x${SIZE}/apps
+                RENAME tvdenoising.png)
+    endforeach()
+endif()
