@@ -47,13 +47,11 @@ jobs:
           & "C:\Program Files\7-Zip\7z.exe" x -y "-o$env:USERPROFILE\natID.SDK\bin" "$env:TEMP\sdk-bin.7z"
           Get-ChildItem "$env:USERPROFILE\natID.SDK\bin" -Filter *.dll | Select-Object -First 5 Name
 
-      - name: Setup RAMDisk and project symlink
+      - name: Setup RAMDisk
         shell: cmd
         run: |
           if not exist %USERPROFILE%\natID.RAMDisk mkdir %USERPROFILE%\natID.RAMDisk
           if not exist R:\ subst R: %USERPROFILE%\natID.RAMDisk
-          mkdir %USERPROFILE%\Desktop 2>nul
-          mklink /J %USERPROFILE%\Desktop\TVDenoising %GITHUB_WORKSPACE%
 
       - name: Build (Release)
         shell: cmd
@@ -67,8 +65,21 @@ jobs:
         shell: pwsh
         run: |
           $env:HOME = $env:USERPROFILE
-          xcopy /E /I "$env:USERPROFILE\natID.SDK\DevEnv\SetupCollectors" "$env:USERPROFILE\Setups"
-          Copy-Item "$env:GITHUB_WORKSPACE\packaging\TVDenoising.xml" "$env:USERPROFILE\Setups\"
+          # Collector config expects project at $HOME/Desktop/TVDenoising
+          New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\Desktop" | Out-Null
+          if (-not (Test-Path "$env:USERPROFILE\Desktop\TVDenoising")) {
+            cmd /c "mklink /J %USERPROFILE%\Desktop\TVDenoising %GITHUB_WORKSPACE%"
+          }
+          Copy-Item "$env:USERPROFILE\natID.SDK\DevEnv\SetupCollectors" "$env:USERPROFILE\Setups" -Recurse -Force
+          Copy-Item "packaging/TVDenoising.xml" "$env:USERPROFILE\Setups\"
+
+          # IMPORTANT: SetupCollector loads Packages/*.xml from the SDK's own
+          # SetupCollectors folder (NOT from the config's folder) - so the
+          # patched GTK4.xml must overwrite the SDK's copy
+          Copy-Item "packaging/GTK4.xml" "$env:USERPROFILE\natID.SDK\DevEnv\SetupCollectors\Packages\GTK4.xml" -Force
+          Write-Host "--- SDK GTK4.xml Group paths after overwrite: ---"
+          Select-String -Path "$env:USERPROFILE\natID.SDK\DevEnv\SetupCollectors\Packages\GTK4.xml" -Pattern 'path="' | ForEach-Object { $_.Line.Trim() }
+
           & "$env:USERPROFILE\natID.Utils\windows\SetupCollector.exe" "$env:USERPROFILE\Setups\TVDenoising.xml"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cmd /c "dir /s /b R:\Setup\TVDenoising"
