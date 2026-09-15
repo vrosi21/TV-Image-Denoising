@@ -129,8 +129,9 @@ jobs:
 
       - name: Build (Release)
         run: |
-          cmake -S Implementation -B $HOME/natID.RAMDisk/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64
+          cmake -S Implementation -B $HOME/natID.RAMDisk/build -DCMAKE_BUILD_TYPE=Release
           cmake --build $HOME/natID.RAMDisk/build -j
+          test -f $HOME/natID.RAMDisk/Out/TVDenoising/Release/TVDenoising.app/Contents/MacOS/TVDenoising
 
       - name: Collect installer (SetupCollector)
         run: |
@@ -149,16 +150,38 @@ jobs:
             echo "WARNING: no installer output found"
           ls -laR "$GITHUB_WORKSPACE/installer-output/"
 
-      - name: Re-sign and clear quarantine
+      - name: Re-sign app and clear quarantine flags
         run: |
-          codesign --force --deep --sign - "$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
-          xattr -cr "$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
+          APP="$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
+          test -d "$APP" || { echo "ERROR: $APP not found"; ls -la "$GITHUB_WORKSPACE/installer-output"; exit 1; }
 
-      - name: Zip .app
+          echo "=== nested dylibs before signing ==="
+          find "$APP" -name "*.dylib" -exec sh -c 'echo "--- {}"; codesign -dv {} 2>&1 | head -3' \; || true
+
+          # SetupCollector runs install_name_tool on dylibs marked
+          # adjustRPath="true" (natGUI, Matrix), which INVALIDATES their
+          # signature. arm64 requires every binary to be signed, so re-sign
+          # each nested dylib before signing the bundle.
+          find "$APP" -name "*.dylib" -exec codesign --force --sign - {} \; || true
+
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --verbose=4 "$APP" || true
+          xattr -cr "$APP"
+
+          echo "=== xattr on .app after clearing ==="
+          xattr -l "$APP" || echo "No extended attributes (good)"
+          echo "=== App bundle structure ==="
+          ls -la "$APP/Contents/MacOS/"
+          codesign -dv "$APP" 2>&1 | head -20
+          echo "=== strict verification ==="
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Create distributable zip (ditto preserves exec permissions)
         run: |
           cd "$GITHUB_WORKSPACE/installer-output"
           ditto -c -k --keepParent --sequesterRsrc TVDenoising.app TVDenoising-macOS-Silicon.zip
           xattr -c TVDenoising-macOS-Silicon.zip
+          ls -la TVDenoising-macOS-Silicon.zip
 
       - uses: actions/upload-artifact@v4
         with:
@@ -192,8 +215,9 @@ jobs:
 
       - name: Build (Release)
         run: |
-          cmake -S Implementation -B $HOME/natID.RAMDisk/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
+          cmake -S Implementation -B $HOME/natID.RAMDisk/build -DCMAKE_BUILD_TYPE=Release
           cmake --build $HOME/natID.RAMDisk/build -j
+          test -f $HOME/natID.RAMDisk/Out/TVDenoising/Release/TVDenoising.app/Contents/MacOS/TVDenoising
 
       - name: Collect installer (SetupCollector)
         run: |
@@ -212,16 +236,37 @@ jobs:
             echo "WARNING: no installer output found"
           ls -laR "$GITHUB_WORKSPACE/installer-output/"
 
-      - name: Re-sign and clear quarantine
+      - name: Re-sign app and clear quarantine flags
         run: |
-          codesign --force --deep --sign - "$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
-          xattr -cr "$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
+          APP="$GITHUB_WORKSPACE/installer-output/TVDenoising.app"
+          test -d "$APP" || { echo "ERROR: $APP not found"; ls -la "$GITHUB_WORKSPACE/installer-output"; exit 1; }
 
-      - name: Zip .app
+          echo "=== nested dylibs before signing ==="
+          find "$APP" -name "*.dylib" -exec sh -c 'echo "--- {}"; codesign -dv {} 2>&1 | head -3' \; || true
+
+          # SetupCollector runs install_name_tool on dylibs marked
+          # adjustRPath="true" (natGUI, Matrix), which INVALIDATES their
+          # signature. Re-sign each nested dylib before signing the bundle.
+          find "$APP" -name "*.dylib" -exec codesign --force --sign - {} \; || true
+
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --verbose=4 "$APP" || true
+          xattr -cr "$APP"
+
+          echo "=== xattr on .app after clearing ==="
+          xattr -l "$APP" || echo "No extended attributes (good)"
+          echo "=== App bundle structure ==="
+          ls -la "$APP/Contents/MacOS/"
+          codesign -dv "$APP" 2>&1 | head -20
+          echo "=== strict verification ==="
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Create distributable zip (ditto preserves exec permissions)
         run: |
           cd "$GITHUB_WORKSPACE/installer-output"
           ditto -c -k --keepParent --sequesterRsrc TVDenoising.app TVDenoising-macOS-Intel.zip
           xattr -c TVDenoising-macOS-Intel.zip
+          ls -la TVDenoising-macOS-Intel.zip
 
       - uses: actions/upload-artifact@v4
         with:
