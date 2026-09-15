@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <SetupCollector xmlns:win="windows" xmlns:mac="macOS" xmlns:lin="linux" executableName="TVDenoising">
-	<Folders dev="$HOME/Desktop/TVDenoising" executable="$RAMDisk/Out/TVDenoising/Release" out="$RAMDisk/Setup/TVDenoising"/>
+	<Folders dev="$HOME/Desktop/TVDenoising/Implementation" executable="$RAMDisk/Out/TVDenoising/Release" out="$RAMDisk/Setup/TVDenoising"/>
 	<Packages debug="false">
 		<Package name="natGUIALL"/>
 		<Package name="Matrix"/>
