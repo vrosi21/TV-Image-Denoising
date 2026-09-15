@@ -1,5 +1,13 @@
 <?xml version='1.0'?>
-<DevRes version="2024.07.16" regionals="Common/Regionals">
+<DevRes regionals="Common/Regionals"
+        displayName="TVDenoising"
+        maintainer="KemalSivro"
+        email="kemalsivro@gmail.com"
+        homePage="https://github.com/vrosi21/TV-Image-Denoising"
+        majorVersion="1"
+        minorVersion="0"
+        versionDate="2026-09-15"
+        comment="Total-variation image denoising with Gradient Descent (Armijo) and Newton method (Huber smoothing). Numerical Optimisations project, ETF Sarajevo.">
 	<Langs>
 		<Lang id="EN" name="English"/>
 	</Langs>
