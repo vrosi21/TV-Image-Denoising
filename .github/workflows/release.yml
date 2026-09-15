@@ -176,6 +176,19 @@ jobs:
           echo "=== strict verification ==="
           codesign --verify --deep --strict --verbose=2 "$APP"
 
+          # Info.plist sanity: unsubstituted $(...) placeholders produce a
+          # bundle macOS reports as "damaged or incomplete"
+          echo "=== Info.plist ==="
+          plutil -lint "$APP/Contents/Info.plist"
+          EXEC=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Contents/Info.plist")
+          BID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Contents/Info.plist")
+          echo "CFBundleExecutable = $EXEC"
+          echo "CFBundleIdentifier = $BID"
+          case "$EXEC$BID" in
+            *'$('*) echo "ERROR: unsubstituted placeholder in Info.plist"; exit 1 ;;
+          esac
+          test -f "$APP/Contents/MacOS/$EXEC" || { echo "ERROR: executable '$EXEC' missing"; exit 1; }
+
       - name: Create distributable zip (ditto preserves exec permissions)
         run: |
           cd "$GITHUB_WORKSPACE/installer-output"
@@ -260,6 +273,19 @@ jobs:
           codesign -dv "$APP" 2>&1 | head -20
           echo "=== strict verification ==="
           codesign --verify --deep --strict --verbose=2 "$APP"
+
+          # Info.plist sanity: unsubstituted $(...) placeholders produce a
+          # bundle macOS reports as "damaged or incomplete"
+          echo "=== Info.plist ==="
+          plutil -lint "$APP/Contents/Info.plist"
+          EXEC=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Contents/Info.plist")
+          BID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Contents/Info.plist")
+          echo "CFBundleExecutable = $EXEC"
+          echo "CFBundleIdentifier = $BID"
+          case "$EXEC$BID" in
+            *'$('*) echo "ERROR: unsubstituted placeholder in Info.plist"; exit 1 ;;
+          esac
+          test -f "$APP/Contents/MacOS/$EXEC" || { echo "ERROR: executable '$EXEC' missing"; exit 1; }
 
       - name: Create distributable zip (ditto preserves exec permissions)
         run: |
