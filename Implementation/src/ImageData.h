@@ -255,6 +255,23 @@ public:
     // from std::random_device — no external srand() needed, no platform
     // variance in distribution quality.
     // ------------------------------------------------------------------
+    // Reproducible variant: the same seed gives the same noise on every
+    // platform (mt19937 is fully specified; Box-Muller is done by hand
+    // because std::normal_distribution differs between standard libraries).
+    void addGaussianNoise(float sigma, unsigned seed)
+    {
+        std::mt19937 rng(seed);
+        auto uniform = [&rng]() { return (static_cast<double>(rng()) + 0.5) / 4294967296.0; };
+
+        for (float& p : pixels)
+        {
+            const double z = std::sqrt(-2.0 * std::log(uniform())) * std::cos(6.283185307179586 * uniform());
+            p += sigma * static_cast<float>(z);
+            if (p < 0.f) p = 0.f;
+            if (p > 1.f) p = 1.f;
+        }
+    }
+
     void addGaussianNoise(float sigma)
     {
         static thread_local std::mt19937 rng{std::random_device{}()};

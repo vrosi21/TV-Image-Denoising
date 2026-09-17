@@ -1,0 +1,37 @@
+# CMake build trees (natID writes binaries to ~/natID.RAMDisk/Out)
+build/
+out/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+
+# IDEs and editors
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Paper sources: LaTeX, figures, experiment drivers and data.
+# Only the compiled PDF in docs/ is tracked.
+docs/paper/
+
+# LaTeX by-products anywhere else
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+
+# Python
+__pycache__/
+*.pyc

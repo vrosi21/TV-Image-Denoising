@@ -196,6 +196,35 @@ jobs:
           xattr -c TVDenoising-macOS-Silicon.zip
           ls -la TVDenoising-macOS-Silicon.zip
 
+      - name: Verify shipped artifact (unzip round-trip)
+        run: |
+          cd "$GITHUB_WORKSPACE/installer-output"
+          rm -rf /tmp/verify && mkdir -p /tmp/verify
+          ditto -x -k TVDenoising-macOS-Silicon.zip /tmp/verify
+          APP="/tmp/verify/TVDenoising.app"
+          test -d "$APP" || { echo "ERROR: app missing after unzip"; ls -laR /tmp/verify; exit 1; }
+
+          echo "=== signature on EXTRACTED copy ==="
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+          EXEC=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Contents/Info.plist")
+          echo "CFBundleExecutable = $EXEC"
+          test -x "$APP/Contents/MacOS/$EXEC" || { echo "ERROR: '$EXEC' missing or not executable"; ls -la "$APP/Contents/MacOS/"; exit 1; }
+
+          echo "=== architecture ==="
+          file "$APP/Contents/MacOS/$EXEC"
+
+          echo "=== dylib linkage ==="
+          otool -L "$APP/Contents/MacOS/$EXEC" | head -30
+
+          echo "=== bundled dylibs ==="
+          find "$APP" -name "*.dylib" -exec basename {} \; || true
+
+          # Gatekeeper's own verdict. Ad-hoc signed apps are always
+          # "rejected (unnotarized)" - informational only, never fatal.
+          echo "=== spctl (informational) ==="
+          spctl --assess --type execute -vv "$APP" 2>&1 || true
+
       - uses: actions/upload-artifact@v4
         with:
           name: TVDenoising-macOS-Silicon
@@ -293,6 +322,35 @@ jobs:
           ditto -c -k --keepParent --sequesterRsrc TVDenoising.app TVDenoising-macOS-Intel.zip
           xattr -c TVDenoising-macOS-Intel.zip
           ls -la TVDenoising-macOS-Intel.zip
+
+      - name: Verify shipped artifact (unzip round-trip)
+        run: |
+          cd "$GITHUB_WORKSPACE/installer-output"
+          rm -rf /tmp/verify && mkdir -p /tmp/verify
+          ditto -x -k TVDenoising-macOS-Intel.zip /tmp/verify
+          APP="/tmp/verify/TVDenoising.app"
+          test -d "$APP" || { echo "ERROR: app missing after unzip"; ls -laR /tmp/verify; exit 1; }
+
+          echo "=== signature on EXTRACTED copy ==="
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+          EXEC=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Contents/Info.plist")
+          echo "CFBundleExecutable = $EXEC"
+          test -x "$APP/Contents/MacOS/$EXEC" || { echo "ERROR: '$EXEC' missing or not executable"; ls -la "$APP/Contents/MacOS/"; exit 1; }
+
+          echo "=== architecture ==="
+          file "$APP/Contents/MacOS/$EXEC"
+
+          echo "=== dylib linkage ==="
+          otool -L "$APP/Contents/MacOS/$EXEC" | head -30
+
+          echo "=== bundled dylibs ==="
+          find "$APP" -name "*.dylib" -exec basename {} \; || true
+
+          # Gatekeeper's own verdict. Ad-hoc signed apps are always
+          # "rejected (unnotarized)" - informational only, never fatal.
+          echo "=== spctl (informational) ==="
+          spctl --assess --type execute -vv "$APP" 2>&1 || true
 
       - uses: actions/upload-artifact@v4
         with:

@@ -1,8 +1,12 @@
 <?xml version='1.0'?>
 <DevRes>
 	<Images>
-		<Res id="load"    path="Common/Icons/openSave/open64.png"/>
-		<Res id="denoise" path="Common/Icons/update64.png"/>
+		<Res id="tbImages"        path="Common/Icons/openSave/open64.png"/>
+		<Res id="tbRun"           path="Common/Icons/arrow_right.png"/>
+		<Res id="tbStudy"         path="Common/Icons/report64_2.png"/>
+		<Res id="tbStop"          path="Common/Icons/x.png"/>
+		<Res id="tbExport"        path="Common/Icons/saveToPDF64.png"/>
+		<Res id="tbExportsFolder" path="Common/Icons/Formula/Open.png"/>
 	</Images>
 
 	<!-- Test images loaded at runtime via gui::getResFileName("key") -->

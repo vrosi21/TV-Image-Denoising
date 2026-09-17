@@ -193,11 +193,12 @@ public:
     : _epsilon(epsilon)
     {}
 
-    void denoise(const ImageData&    f,
-                 ImageData&          u,
-                 float               lambda,
-                 int                 maxIter,
-                 std::vector<float>* history = nullptr) override
+    void denoise(const ImageData&         f,
+                 ImageData&               u,
+                 float                    lambda,
+                 int                      maxIter,
+                 std::vector<float>*      history = nullptr,
+                 const IterationObserver* observer = nullptr) override
     {
         u = f;
         if (history) history->clear();
@@ -222,6 +223,9 @@ public:
             if (history) history->push_back(Fu);
             std::printf("  Newton iter %2d  F=%.6f\n", iter+1,
                         static_cast<double>(Fu));
+
+            if (observer && !(*observer)(iter + 1, u))
+                break;
         }
     }
 };
