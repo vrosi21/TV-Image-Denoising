@@ -1,15 +1,17 @@
 #pragma once
 #include "PlotCanvas.h"
 #include <algorithm>
+#include <limits>
+#include <vector>
 
 // ============================================================
-// ConvergenceView — per-iteration behaviour of the solvers.
+// ConvergenceView: per-iteration behaviour of the solvers.
 //
-//   top-left    : energy gap F(u_k) − F_best (log) — linear vs.
+//   top-left    : energy gap F(u_k) − F_best (log), linear vs.
 //                 fast convergence of GD and Newton
 //   top-right   : PSNR of u_k against the clean image
 //   bottom-left : relative change ‖u_k − u_(k−1)‖ / ‖u_(k−1)‖ (log)
-//   bottom-right: PSNR against wall time — accuracy per unit of work
+//   bottom-right: PSNR against wall time, accuracy per unit of work
 //
 // F uses the exact TV (epsilon = 0) so both solvers are measured
 // with the same yardstick.

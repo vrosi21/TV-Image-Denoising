@@ -12,9 +12,14 @@
 #include <fstream>
 #include <memory>
 #include <thread>
+#include <exception>
+#include <functional>
+#include <string>
+#include <system_error>
+#include <vector>
 
 // ============================================================
-// DenoisingPanel — central view and experiment coordinator
+// DenoisingPanel: central view and experiment coordinator
 //
 // Widget tree:
 //   SplitterLayout (Horizontal, AuxiliaryCell::First)
@@ -231,7 +236,7 @@ private:
     }
 
     // ----------------------------------------------------------
-    // Files (no dialogs — see AppFolders.h)
+    // Files (no dialogs, see AppFolders.h)
     // ----------------------------------------------------------
     std::vector<fo::fs::path> _userImages;
     DenoiseResultPtr          _lastStudy;

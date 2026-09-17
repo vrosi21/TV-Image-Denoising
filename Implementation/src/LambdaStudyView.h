@@ -1,14 +1,15 @@
 #pragma once
 #include "PlotCanvas.h"
+#include <vector>
 
 // ============================================================
-// LambdaStudyView — how the regularisation weight affects both
+// LambdaStudyView: how the regularisation weight affects both
 // methods, on identical noisy input.
 //
 //   left        : PSNR vs lambda (log axis) for GD and Newton,
 //                 best lambda of each method marked
 //   right-top   : L-curve TV(u) vs data misfit ½‖u − f‖² per method
-//   right-bottom: solver time vs lambda — cost of each method
+//   right-bottom: solver time vs lambda, cost of each method
 //
 // The lambda currently set in the sidebar is drawn as a dotted
 // guide so the user sees where the working point lies.

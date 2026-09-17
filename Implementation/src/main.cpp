@@ -1,4 +1,4 @@
-// TV Image Denoising — Numerical Optimization Project
+// TV Image Denoising: Numerical Optimization Project
 // University of Sarajevo, Faculty of Electrical Engineering
 //
 // Entry point: creates the NatID GUI application and the initial window.

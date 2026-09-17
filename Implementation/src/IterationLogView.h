@@ -9,7 +9,7 @@
 #include <limits>
 
 // ============================================================
-// IterationLogView — the Report page, backed by in-memory
+// IterationLogView: the Report page, backed by in-memory
 // (connectionless) data sets:
 //   comparison : one row per method of the last comparison
 //   iterations : one row per iteration of every method

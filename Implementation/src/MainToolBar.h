@@ -4,7 +4,7 @@
 #include "MainMenuBar.h"
 
 // ============================================================
-// MainToolBar — primary actions, left to right in workflow order:
+// MainToolBar: primary actions, left to right in workflow order:
 //   Images | Run, Lambda study, Stop | Export all, Open exports
 // Items reuse the menu IDs, so one handler serves menu and toolbar.
 // Icons are registered in res/main.xml.

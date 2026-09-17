@@ -7,7 +7,7 @@
 #include "WindowPlacement.h"
 
 // ============================================================
-// MainWindow — top-level application window
+// MainWindow: top-level application window
 //
 //   ┌ Menu:    App | File | Run | Help ─────────────────────────┐
 //   ├ Toolbar: Images | Run  Lambda study  Stop | Export all  Open exports ┤

@@ -4,7 +4,7 @@
 #include <vector>
 
 // ============================================================
-// ITVSolver — abstract interface for TV denoising solvers.
+// ITVSolver: abstract interface for TV denoising solvers.
 //
 // convergenceHistory (optional):
 //   If non-null, each solver appends F(u_k) after every

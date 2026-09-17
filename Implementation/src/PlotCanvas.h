@@ -4,7 +4,7 @@
 #include "DenoisingRunner.h"
 
 // ============================================================
-// PlotCanvas — base for result views drawn with plot::Chart.
+// PlotCanvas: base for result views drawn with plot::Chart.
 // Holds the shared immutable result; subclasses paint the whole
 // canvas rectangle.
 // ============================================================

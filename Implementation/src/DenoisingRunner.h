@@ -11,13 +11,14 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 // ============================================================
-// DenoisingRunner — executes one experiment, GUI-free.
+// DenoisingRunner: executes one experiment, GUI-free.
 //
 //   Comparison  : every enabled solver on the same noisy image
 //   LambdaStudy : every enabled solver for log-spaced lambda
-//                 values — PSNR, L-curve and cost per method
+//                 values: PSNR, L-curve and cost per method
 //
 // Noise is generated once from a seed, so all solvers and all
 // lambda values see identical input.  Per-iteration metrics are

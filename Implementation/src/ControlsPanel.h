@@ -13,9 +13,11 @@
 #include <functional>
 #include <random>
 #include <vector>
+#include <algorithm>
+#include <cmath>
 
 // ============================================================
-// ControlsPanel — experiment settings sidebar.
+// ControlsPanel: experiment settings sidebar.
 //
 //   IMAGE         built-in samples + images folder, Refresh, size info
 //   NOISE         sigma, seed (+ New)

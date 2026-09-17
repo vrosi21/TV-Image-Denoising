@@ -2,7 +2,7 @@
 #include <gui/MenuBar.h>
 
 // ============================================================
-// MainMenuBar — application menus.  The toolbar uses the same
+// MainMenuBar: application menus.  The toolbar uses the same
 // menu/action IDs, so MainWindow::onActionItem() handles both.
 // Exports go to a dated folder under Documents/TV Image Denoising/
 // Exports (no file dialogs).

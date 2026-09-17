@@ -8,7 +8,7 @@
 #include "DenoisingRunner.h"
 
 // ============================================================
-// PlotStyle — shared colours, glyphs and formatting so each
+// PlotStyle: shared colours, glyphs and formatting so each
 // solver looks the same in every chart, table and caption.
 // ============================================================
 namespace plot

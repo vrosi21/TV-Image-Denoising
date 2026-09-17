@@ -41,7 +41,7 @@ source_group("inc\\dp"           FILES ${TVDEN_INC_DP})
 source_group("src"               FILES ${TVDEN_SOURCES})
 
 # Image paths are resolved at runtime via gui::getResFileName()
-# (registered in res/main.xml) — no compile-time path macros needed.
+# (registered in res/main.xml), no compile-time path macros needed.
 target_compile_definitions(${TVDEN_NAME} PUBLIC
     SER_RESULTS
     MU_USETIMER)

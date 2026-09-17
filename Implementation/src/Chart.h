@@ -9,7 +9,7 @@
 #include <vector>
 
 // ============================================================
-// Chart — minimal 2-D chart painter for gui::Canvas::onDraw.
+// Chart: minimal 2-D chart painter for gui::Canvas::onDraw.
 //
 // The natID plot library ships without a runtime library for
 // Windows in this SDK, so charts are drawn with gui::Shape and

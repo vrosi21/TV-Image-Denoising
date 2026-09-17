@@ -4,7 +4,7 @@
 #include <cmath>
 
 // ============================================================
-// DenoisingMetrics — solver-independent quality measures.
+// DenoisingMetrics: solver-independent quality measures.
 //
 // The solvers use different Huber parameters (GD: fixed 1e-3,
 // Newton: user epsilon), so their internal F values are not

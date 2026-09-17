@@ -12,7 +12,7 @@
 #include <vector>
 
 // ============================================================
-// DenoisingView — the Overview page.
+// DenoisingView: the Overview page.
 //
 //   ┌ Noisy input ┐ ┌ Gradient descent ┐ ┌ Newton (Huber) ┐   metric cards
 //   └─────────────┘ └──────────────────┘ └────────────────┘
@@ -27,7 +27,7 @@
 //   gui::Image uses the platform 2D drawing API, so the canvas also
 //   works inside layouts and tab views.
 //
-// SRP: presentation of one experiment only — no solver logic.
+// SRP: presentation of one experiment only, no solver logic.
 // ============================================================
 class DenoisingView : public gui::Canvas
 {

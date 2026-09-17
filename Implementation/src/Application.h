@@ -3,7 +3,7 @@
 #include "MainWindow.h"
 
 // ============================================================
-// Application — NatID application entry point
+// Application: NatID application entry point
 // SRP: creates the first window and hands off control.
 // ============================================================
 class Application : public gui::Application

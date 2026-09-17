@@ -4,7 +4,7 @@
 #include <algorithm>
 
 // ============================================================
-// WindowPlacement — initial window geometry that always fits the
+// WindowPlacement: initial window geometry that always fits the
 // screen: the preferred size, shrunk to 90% x 85% of the display
 // when the display is smaller, and centred.  Starting in a normal
 // (not maximized) window avoids natID layouts that only stretch

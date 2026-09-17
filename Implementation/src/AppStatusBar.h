@@ -4,10 +4,10 @@
 #include <gui/ProgressIndicator.h>
 
 // ============================================================
-// AppStatusBar — read-only status strip at the bottom.
+// AppStatusBar: read-only status strip at the bottom.
 //
 // NatID StatusBar reliably renders only Labels (and
-// ProgressIndicators) — NOT Buttons or Sliders.  This bar
+// ProgressIndicators), NOT Buttons or Sliders.  This bar
 // therefore uses Labels only plus a progress indicator that
 // fills while a computation runs:
 //   [image name]   [status / result summary ........]   [progress]

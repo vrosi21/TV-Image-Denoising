@@ -11,9 +11,10 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <system_error>
 
 // ============================================================
-// AppFolders — where the application reads and writes files.
+// AppFolders: where the application reads and writes files.
 //
 //   <Documents>/TV Image Denoising/Images                 user images (PNG/JPEG)
 //   <Documents>/TV Image Denoising/Exports/<date_time_…>  one folder per result

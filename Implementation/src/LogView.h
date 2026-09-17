@@ -10,7 +10,7 @@
 #include <cstdio>
 
 // ============================================================
-// LogView — activity log page.
+// LogView: activity log page.
 // Keeps a timestamped history of every run in the session
 // (parameters and per-method results) that can be copied into
 // a report.  Entries accumulate until the user clears the log.

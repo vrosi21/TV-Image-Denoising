@@ -5,7 +5,7 @@
 #include <cstdio>
 
 // ============================================================
-// TVSolverGD — Gradient Descent with Backtracking Line Search
+// TVSolverGD: Gradient Descent with Backtracking Line Search
 //
 // Minimises:  F(u) = ½‖u − f‖² + λ · TV_ε(u)
 //
@@ -24,7 +24,7 @@
 class TVSolverGD : public ITVSolver
 {
 private:
-    float _epsilon; // Huber smoothing (fixed for GD — not user-exposed)
+    float _epsilon; // Huber smoothing (fixed for GD, not user-exposed)
 
     // F(u) = 0.5*||u-f||^2 + lambda * TV_eps(u)
     float computeF(const ImageData& u,

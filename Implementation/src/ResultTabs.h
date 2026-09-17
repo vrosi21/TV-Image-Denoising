@@ -7,7 +7,7 @@
 #include "LogView.h"
 
 // ============================================================
-// ResultTabs — the work area, one page per question:
+// ResultTabs: the work area, one page per question:
 //   Overview    : how good is each method?        (cards + images)
 //   Convergence : how does each method get there?  (per-iteration plots)
 //   Lambda study: which lambda should be used?      (PSNR, L-curve, cost)
