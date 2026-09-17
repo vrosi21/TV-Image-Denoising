@@ -1,14 +1,14 @@
 #pragma once
 #include "ITVSolver.h"
-#include <dense/Matrix.h>          // NatID dense matrix — used when N is small
-#include <sparse/ISolver.h>        // NatID sparse LDLT — fallback for large images
+#include <dense/Matrix.h>          // NatID dense matrix, used when N is small
+#include <sparse/ISolver.h>        // NatID sparse LDLT, fallback for large images
 #include <mem/PointerReleaser.h>
 #include <cmath>
 #include <cstdio>
 #include <vector>
 
 // ============================================================
-// TVSolverNewton — Newton's Method with Huber TV regularisation
+// TVSolverNewton: Newton's Method with Huber TV regularisation
 //
 // Minimises:  F(u) = ½‖u − f‖² + λ · TV_ε(u)
 //
@@ -19,7 +19,7 @@
 //   W diagonal: w_{ij} = 1/√(dx²+dy²+ε²)
 //
 // Newton step per iteration:  solve  H · u_new = f
-//   (this equals IRLS — the IRLS update IS a Newton step)
+//   (this equals IRLS, the IRLS update IS a Newton step)
 //
 // ── Linear solver strategy ──────────────────────────────────
 // For images with N ≤ kMaxDenseN pixels the Newton system is
@@ -27,7 +27,7 @@
 // required by the project spec (Lab 6 dense matrix API).
 //
 // For larger images (225×225 → N≈50 K) a dense N×N matrix
-// would require ~20 GB of RAM — physically impossible.
+// would require ~20 GB of RAM, physically impossible.
 // The sparse LDLT path is used automatically in that case,
 // producing identical results with a fraction of the memory.
 // The report should note this practical limitation.
@@ -83,7 +83,7 @@ private:
         return 0.5f*fid + lambda*tv;
     }
 
-    // ── Dense solve path — used when N ≤ kMaxDenseN ────────
+    // ── Dense solve path, used when N ≤ kMaxDenseN ────────
     // Assembles the full N×N Hessian H and RHS b using
     // NatID's dense::DblMatrix, then solves H·x = b in place.
     void solveNewtonDense(const ImageData&          f,
@@ -116,7 +116,7 @@ private:
                 // Diagonal
                 Hi(k, k) = 1.0 + lambda*(wR+wL+wB+wA);
 
-                // Off-diagonals (symmetric — set both sides)
+                // Off-diagonals (symmetric, set both sides)
                 if (j > 0)
                 {
                     int L = i*W+j-1;
@@ -147,7 +147,7 @@ private:
         }
     }
 
-    // ── Sparse LDLT path — fallback for large images ────────
+    // ── Sparse LDLT path, fallback for large images ────────
     void solveNewtonSparse(const ImageData&          f,
                            const std::vector<float>& wx,
                            const std::vector<float>& wy,
@@ -193,11 +193,12 @@ public:
     : _epsilon(epsilon)
     {}
 
-    void denoise(const ImageData&    f,
-                 ImageData&          u,
-                 float               lambda,
-                 int                 maxIter,
-                 std::vector<float>* history = nullptr) override
+    void denoise(const ImageData&         f,
+                 ImageData&               u,
+                 float                    lambda,
+                 int                      maxIter,
+                 std::vector<float>*      history = nullptr,
+                 const IterationObserver* observer = nullptr) override
     {
         u = f;
         if (history) history->clear();
@@ -222,6 +223,9 @@ public:
             if (history) history->push_back(Fu);
             std::printf("  Newton iter %2d  F=%.6f\n", iter+1,
                         static_cast<double>(Fu));
+
+            if (observer && !(*observer)(iter + 1, u))
+                break;
         }
     }
 };

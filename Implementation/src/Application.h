@@ -3,7 +3,7 @@
 #include "MainWindow.h"
 
 // ============================================================
-// Application — NatID application entry point
+// Application: NatID application entry point
 // SRP: creates the first window and hands off control.
 // ============================================================
 class Application : public gui::Application
@@ -11,9 +11,10 @@ class Application : public gui::Application
 protected:
     gui::Window* createInitialWindow() override
     {
-        auto pWnd = new MainWindow();
-        setInitialFrameSize(gui::Window::FrameSize::Maximized);
-        return pWnd;
+        // normal window sized to fit the screen (see WindowPlacement.h);
+        // starting maximized left the layout unstretched until a resize
+        setInitialFrameSize(gui::Window::FrameSize::UseSpecified);
+        return new MainWindow();
     }
 
 public:

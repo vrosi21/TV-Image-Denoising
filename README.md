@@ -2,125 +2,124 @@
 
 # TV Image Denoising
 
-**Total-variation image denoising with an interactive GUI — Gradient Descent (Armijo backtracking) and Newton's Method (Huber smoothing), built with C++ and the natID framework.**
+**Total variation image denoising with gradient descent (Armijo backtracking) and a Newton-type lagged diffusivity method, in a cross-platform C++ desktop application built on natID.**
 
-**Academic Project** • Numerical Optimisations • Data Science and AI • ETF Sarajevo
+Numerical Optimisations · Data Science and Artificial Intelligence · Faculty of Electrical Engineering, University of Sarajevo
 
 ![C++](https://img.shields.io/badge/C++-20-blue)
 ![CMake](https://img.shields.io/badge/CMake-3.17+-green)
-![natID](https://img.shields.io/badge/natID-Framework-orange)
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgray)
+![natID](https://img.shields.io/badge/natID-framework-orange)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgray)
 
 </div>
-
----
-
-## Overview
-
-TV Image Denoising solves the total-variation minimisation problem
-
-> **F(u) = ½‖u − f‖² + λ · TVε(u)**
-
-where **f** is the noisy input image and **λ** controls the denoising strength. The Huber-smoothed TV term keeps the gradient Lipschitz-continuous, enabling both first- and second-order solvers.
-
-**Academic context:**
 
 | | |
 |---|---|
 | **Course** | Numerical Optimisations |
-| **Professor** | Prof. Dr. Izudin Džafić |
+| **Professor** | Izudin Džafić |
 | **Student** | Kemal Sivro |
 | **Student ID** | 20015 |
-| **Academic Year** | 2025/26 |
+| **Academic year** | 2025/26 |
+| **Paper** | [TV Image Denoising - Paper.pdf](docs/TV%20Image%20Denoising%20-%20Paper.pdf) |
 
----
+## Overview
+
+The application denoises a grayscale image $f$ by minimising
+
+$$
+F_\varepsilon(u) = \tfrac12 \lVert u - f \rVert_2^2 + \lambda \sum_{i,j} \sqrt{(D_x u)_{i,j}^2 + (D_y u)_{i,j}^2 + \varepsilon^2},
+$$
+
+a smoothed version of the Rudin-Osher-Fatemi model. The weight $\lambda$ controls how strongly noise is removed and $\varepsilon$ makes the functional twice differentiable, so both a first-order and a second-order method can be applied to it:
+
+| Method | Iteration | Cost per iteration |
+|---|---|---|
+| Gradient descent | $u_{k+1} = \mathrm{clip}(u_k - t\,\nabla F_\varepsilon(u_k), 0, 1)$, $t$ from Armijo backtracking | $O(N)$ |
+| Newton-type (lagged diffusivity, IRLS) | solve $(I + \lambda D^\top W(u_k) D)\,u_{k+1} = f$ with $w = 1/\sqrt{\lvert\nabla u_k\rvert^2 + \varepsilon^2}$ | dense LU up to 4096 pixels, sparse $LDL^\top$ above |
+
+Both methods run on the same noisy image, generated from a seed so that the noise is identical on every platform. All plots use the exact TV energy ($\varepsilon = 0$) and the PSNR against the clean image, so the methods are measured on the same scale even though they use different smoothing.
 
 ## Features
 
-- **Two solvers** — Gradient Descent with Armijo backtracking line-search, and Newton's Method via IRLS (Huber)
-- **Interactive GUI** — load any image, adjust λ and ε live, run/stop at any point
-- **Convergence plot** — real-time F(u) vs. iteration chart for both solvers
-- **Side-by-side view** — original and denoised images displayed together
-- **Test images included** — Cameraman, Barbara, Ape (standard denoising benchmarks)
-- **Cross-platform** — Windows, macOS (Intel + Apple Silicon), Linux
+- **Overview:** one card per method with PSNR, gain, iterations and time, marked best quality and fastest, above the original, noisy and denoised images.
+- **Convergence:** exact energy gap, PSNR and relative change per iteration, and PSNR against wall time, for both methods on the same axes.
+- **Lambda study:** PSNR against $\lambda$ with the best value per method, the L-curve and the computation cost.
+- **Report and Log:** every number in tables, and a time-stamped session log.
+- **Controls:** sliders for noise level, $\lambda$, $\varepsilon$ and iterations, a seed with a new-seed button, method selection and an option to re-run on every change. Computations run in the background and can be stopped.
+- **Images:** Cameraman, Barbara and Ape are included. Your own PNG or JPEG files go into `Documents/TV Image Denoising/Images` (File, Open images folder) and appear after Refresh.
+- **Export:** File, Export all writes charts (PDF), images (PNG) and data (CSV) into a new time-stamped folder under `Documents/TV Image Denoising/Exports`; Open exports folder shows it. No file dialogs are used.
+- **Cross-platform:** Windows, macOS (Apple Silicon and Intel) and Linux from one code base.
 
----
+Keyboard shortcuts (Ctrl on Windows and Linux, Cmd on macOS): R run, L lambda study, E export all, S save images, O open images folder.
 
 ## Installation
 
-### Option A — Download a ready-made installer (recommended)
+### Ready-made installers
 
-Grab an installer for your platform from the [**Releases**](https://github.com/vrosi21/TV-Image-Denoising/releases) page — no build tools required.
+Download the file for your platform from the [Releases](https://github.com/vrosi21/TV-Image-Denoising/releases) page.
 
-| Platform | File | How to install |
+| Platform | File | Installation |
 |---|---|---|
-| 🪟 **Windows 10/11** | `TVDenoising-win.zip` | Unzip, run the `.exe` (or `.msi` directly). Keep both files together. |
-| 🍎 **macOS Apple Silicon** (M1–M4) | `TVDenoising-macOS-Silicon.zip` | Unzip, drag `TVDenoising.app` to Applications. See macOS note below. |
-| 🍎 **macOS Intel** (2016–2020) | `TVDenoising-macOS-Intel.zip` | Same as above. |
-| 🐧 **Linux** (Ubuntu 24.04+) | `TVDenoising-linux.zip` | Unzip, then `sudo apt install ./TVDenoising*.deb` |
+| Windows 10/11 | `TVDenoising-win.zip` | Unzip and run the installer. Keep the `.exe` and `.msi` together. |
+| macOS, Apple Silicon | `TVDenoising-macOS-Silicon.zip` | Unzip and move `TVDenoising.app` to Applications. See the note below. |
+| macOS, Intel | `TVDenoising-macOS-Intel.zip` | As above. |
+| Linux (Ubuntu 24.04 or newer) | `TVDenoising-linux.zip` | Unzip, then `sudo apt install ./TVDenoising*.deb`. |
 
-> ⚠️ **macOS quarantine note:** Safari auto-extracts zips on download, re-applying the quarantine flag. After moving `TVDenoising.app` to Applications, run:
+> **macOS:** Safari unpacks downloaded archives and marks the app as quarantined. After moving the app to Applications run
 > ```
 > xattr -cr /Applications/TVDenoising.app
 > ```
-> No output = success. If you see "damaged or incomplete", the quarantine flag wasn't cleared — run the command above.
+> If macOS still reports that the app is damaged, the quarantine flag was not removed.
 
-### Option B — Build from source
+### Build from source
 
-#### Prerequisites
-
-- CMake 3.17+
-- C++20 compiler (MSVC 2022, Apple Clang 15+, GCC 12+)
-- [natID SDK](https://github.com/idzafic/natID) installed at `$HOME/natID.SDK`
-
-#### Build
+Requirements: CMake 3.17 or newer, a C++20 compiler (MSVC 2022 or newer, Apple Clang 15+, GCC 12+) and the [natID SDK](https://github.com/idzafic/natID) in `$HOME/natID.SDK`. On Linux install `libgtk-4-dev` and `libadwaita-1-dev`.
 
 ```bash
 git clone https://github.com/vrosi21/TV-Image-Denoising.git
 cd TV-Image-Denoising/Implementation
+mkdir -p ~/natID.RAMDisk/Out
 
-mkdir -p ~/natID.RAMDisk/Out   # required by natID DevEnv
-
-# Linux / macOS
+# Linux and macOS
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 
-# Windows (Visual Studio 2022)
-cmake -B build -G "Visual Studio 17 2022" -A x64
+# Windows (Visual Studio)
+cmake -B build -A x64
 cmake --build build --config Release
 ```
 
----
+natID places the executable in `~/natID.RAMDisk/Out/TVDenoising/Release/`, not in `build/`.
 
-## Project Structure
+## Project structure
 
 ```
 TV-Image-Denoising/
-  Implementation/          # C++ source & CMake
-    src/                   # Application, solvers, GUI components
-    res/                   # Images, icons, translations
-    CMakeLists.txt
-    TVDenoising.cmake
-    TVDenoising.desktop    # Linux launcher
-  docs/                    # Project report (PDF)
-  .github/workflows/       # CI — builds installers on tag push
-  LICENSE
-  README.md
+  Implementation/
+    src/
+      ITVSolver.h            solver interface with a per-iteration observer
+      TVSolverGD.h           gradient descent with Armijo backtracking
+      TVSolverNewton.h       lagged diffusivity method, dense LU or sparse LDLT
+      ImageData.h            image buffer, PNG input and output, seeded noise
+      DenoisingMetrics.h     exact TV energy, PSNR, relative change
+      DenoisingRunner.h      comparison and lambda study without any GUI code
+      DenoisingPanel.h       coordinates runs, results and exports
+      ControlsPanel.h, ResultTabs.h, DenoisingView.h, ConvergenceView.h,
+      LambdaStudyView.h, IterationLogView.h, LogView.h, Chart.h, ...
+    res/                     test images, icons, translations
+    CMakeLists.txt, TVDenoising.cmake
+  docs/                      paper (PDF)
+  packaging/                 installer configuration
+  .github/workflows/         release pipeline for all platforms
+  TVDenoising.desktop        Linux launcher
 ```
 
----
+The solver classes depend only on `ITVSolver` and `ImageData`. The GUI talks to them through `DenoisingRunner`, which records metrics through the observer and supports cancellation, so a new method only needs a new `ITVSolver` implementation.
 
-## Algorithm Summary
+## Results in brief
 
-| Solver | Method | Line search |
-|---|---|---|
-| GD | Gradient descent | Armijo backtracking |
-| Newton | IRLS (Huber-smoothed Hessian) | Fixed step (ε controls smoothing) |
-
-The Huber TV functional replaces `|∇u|` with a smooth approximation for `|∇u| < ε`, making the Hessian positive-definite and Newton's method applicable.
-
----
+On three 225 by 225 test images with noise level 0.1 both methods reach the same quality: at the best $\lambda$ their PSNR differs by at most 0.08 dB. Gradient descent costs 3.5 to 5.3 ms per iteration, the Newton-type method 101 to 123 ms, but the latter needs about ten times fewer iterations. The dense Newton system grows like $N^3$ and the sparse solver almost linearly. Details, formulas and all figures are in the [paper](docs/TV%20Image%20Denoising%20-%20Paper.pdf).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).

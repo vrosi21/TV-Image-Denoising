@@ -10,7 +10,7 @@
 #include <mu/mu.h>
 
 // ============================================================
-// ImageData — grayscale float image in [0,1]
+// ImageData: grayscale float image in [0,1]
 // SRP: owns the raw float pixel buffer and its dimensions.
 //      Provides load/save and conversion helpers only.
 //      No solver, no GUI logic.
@@ -83,11 +83,11 @@ public:
     //   CoreGraphics on macOS.
     //
     // WHY uncompressed (BTYPE=00 stored) deflate:
-    //   Pure std C++ only — no external zlib required.  The deflate
+    //   Pure std C++ only, no external zlib required.  The deflate
     //   "stored" block type passes raw bytes verbatim, still wrapped in a
     //   valid zlib header + Adler-32 trailer so libpng accepts it.
     //
-    // Uses only <cstdint>, <cstdio>, <vector> — no platform-specific code.
+    // Uses only <cstdint>, <cstdio>, <vector>, no platform-specific code.
     // ------------------------------------------------------------------
     bool saveToPng(const std::string& filePath) const
     {
@@ -226,8 +226,8 @@ public:
     // Convert to gui::Image via a uniquely-named temp PNG.
     // Unique filenames prevent gui::Image filename-based caching.
     //
-    // Uses mu::getAppSettings()->getTmpFolder() — the NatID cross-
-    // platform temp-directory accessor — instead of getenv / #ifdef.
+    // Uses mu::getAppSettings()->getTmpFolder(), the NatID cross-
+    // platform temp-directory accessor, instead of getenv / #ifdef.
     // Forward slash works on all platforms (Windows C-runtime accepts it).
     // ------------------------------------------------------------------
     bool toImage(gui::Image& img, const char* baseTag = "tvden") const
@@ -249,20 +249,21 @@ public:
     }
 
     // ------------------------------------------------------------------
-    // Add Gaussian noise in-place (sigma in [0,1])
+    // Add Gaussian noise in place (sigma in [0,1]), clipped to [0,1].
     //
-    // Uses C++11 <random> with a thread_local Mersenne Twister seeded
-    // from std::random_device — no external srand() needed, no platform
-    // variance in distribution quality.
+    // The same seed gives the same noise on every platform: mt19937 is
+    // fully specified, and Box-Muller is done by hand because
+    // std::normal_distribution differs between standard libraries.
     // ------------------------------------------------------------------
-    void addGaussianNoise(float sigma)
+    void addGaussianNoise(float sigma, unsigned seed)
     {
-        static thread_local std::mt19937 rng{std::random_device{}()};
-        std::normal_distribution<float> dist(0.f, sigma);
+        std::mt19937 rng(seed);
+        auto uniform = [&rng]() { return (static_cast<double>(rng()) + 0.5) / 4294967296.0; };
 
         for (float& p : pixels)
         {
-            p += dist(rng);
+            const double z = std::sqrt(-2.0 * std::log(uniform())) * std::cos(6.283185307179586 * uniform());
+            p += sigma * static_cast<float>(z);
             if (p < 0.f) p = 0.f;
             if (p > 1.f) p = 1.f;
         }

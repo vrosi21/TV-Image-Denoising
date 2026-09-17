@@ -5,7 +5,7 @@
 #include <cstdio>
 
 // ============================================================
-// TVSolverGD — Gradient Descent with Backtracking Line Search
+// TVSolverGD: Gradient Descent with Backtracking Line Search
 //
 // Minimises:  F(u) = ½‖u − f‖² + λ · TV_ε(u)
 //
@@ -24,7 +24,7 @@
 class TVSolverGD : public ITVSolver
 {
 private:
-    float _epsilon; // Huber smoothing (fixed for GD — not user-exposed)
+    float _epsilon; // Huber smoothing (fixed for GD, not user-exposed)
 
     // F(u) = 0.5*||u-f||^2 + lambda * TV_eps(u)
     float computeF(const ImageData& u,
@@ -90,11 +90,12 @@ public:
     : _epsilon(epsilon)
     {}
 
-    void denoise(const ImageData&    f,
-                 ImageData&          u,
-                 float               lambda,
-                 int                 maxIter,
-                 std::vector<float>* history = nullptr) override
+    void denoise(const ImageData&         f,
+                 ImageData&               u,
+                 float                    lambda,
+                 int                      maxIter,
+                 std::vector<float>*      history = nullptr,
+                 const IterationObserver* observer = nullptr) override
     {
         u = f;
         if (history) history->clear();
@@ -137,6 +138,9 @@ public:
                 float v = u_trial.pixels[k];
                 u.pixels[k] = v < 0.f ? 0.f : (v > 1.f ? 1.f : v);
             }
+
+            if (observer && !(*observer)(iter + 1, u))
+                break;
         }
     }
 };
