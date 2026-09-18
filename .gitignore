@@ -1,0 +1,40 @@
+# CMake build trees (natID writes binaries to ~/natID.RAMDisk/Out)
+build/
+out/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+
+# IDEs and editors
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Paper sources ARE tracked (tex, bib, figures, data, experiment drivers)
+# so the submission is reproducible. Only docs/paper/build/ is excluded,
+# via the generic build/ rule above.
+
+# LaTeX by-products anywhere else
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+
+# Python
+__pycache__/
+*.pyc
+
+# Personal defense notes, not part of the submission
+DEFENSE.html
