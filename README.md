@@ -108,11 +108,11 @@ TV-Image-Denoising/
       LambdaStudyView.h, IterationLogView.h, LogView.h, Chart.h, ...
     res/                     test images, icons, translations
     CMakeLists.txt, TVDenoising.cmake
+    LICENSE
   docs/                      paper (PDF)
-  packaging/                 installer configuration
-  .github/workflows/         release pipeline for all platforms
-  TVDenoising.desktop        Linux launcher
 ```
+
+Installer configuration (`packaging/`), the release pipeline (`.github/workflows/`) and the Linux launcher live on the `ci` branch.
 
 The solver classes depend only on `ITVSolver` and `ImageData`. The GUI talks to them through `DenoisingRunner`, which records metrics through the observer and supports cancellation, so a new method only needs a new `ITVSolver` implementation.
 
@@ -122,4 +122,4 @@ On three 225 by 225 test images with noise level 0.1 both methods reach the same
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [Implementation/LICENSE](Implementation/LICENSE).
