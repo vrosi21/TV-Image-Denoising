@@ -19,9 +19,9 @@ CMakeUserPresets.json
 Thumbs.db
 desktop.ini
 
-# Paper sources: LaTeX, figures, experiment drivers and data.
-# Only the compiled PDF in docs/ is tracked.
-docs/paper/
+# Paper sources ARE tracked (tex, bib, figures, data, experiment drivers)
+# so the submission is reproducible. Only docs/paper/build/ is excluded,
+# via the generic build/ rule above.
 
 # LaTeX by-products anywhere else
 *.aux
