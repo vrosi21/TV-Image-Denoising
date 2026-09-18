@@ -35,3 +35,6 @@ docs/paper/
 # Python
 __pycache__/
 *.pyc
+
+# Personal defense notes, not part of the submission
+DEFENSE.html
